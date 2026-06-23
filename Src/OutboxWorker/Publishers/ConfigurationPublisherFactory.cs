@@ -6,6 +6,7 @@ namespace OutboxWorker.Publishers;
 
 internal sealed class ConfigurationPublisherFactory(
     ISendEndpointProvider sendEndpointProvider,
+    IMessageTypeRegistry typeRegistry,
     IOptions<Dictionary<string, PublisherRoute>> routesOptions) : IPublisherFactory
 {
     private readonly Dictionary<string, PublisherRoute> _routes = routesOptions.Value;
@@ -13,7 +14,7 @@ internal sealed class ConfigurationPublisherFactory(
     public IEventPublisher? GetPublisher(string eventType)
     {
         if (_routes.TryGetValue(eventType, out var route))
-            return new RabbitMqPublisher(sendEndpointProvider, route);
+            return new RabbitMqPublisher(sendEndpointProvider, typeRegistry, route);
 
         return null;
     }

@@ -31,9 +31,18 @@ var routes = builder.Configuration.GetSection("Publishers")
 
 foreach (var (eventType, route) in routes)
 {
-    if (string.IsNullOrWhiteSpace(route.Exchange) || string.IsNullOrWhiteSpace(route.RoutingKey))
-        throw new InvalidOperationException(
-            $"Publisher route for '{eventType}' has an empty Exchange or RoutingKey.");
+    if (route.RouteType == RouteType.Command)
+    {
+        if (string.IsNullOrWhiteSpace(route.Queue))
+            throw new InvalidOperationException(
+                $"Publisher route for '{eventType}' is type Command but has an empty Queue.");
+    }
+    else
+    {
+        if (string.IsNullOrWhiteSpace(route.Exchange))
+            throw new InvalidOperationException(
+                $"Publisher route for '{eventType}' is type Event but has an empty Exchange.");
+    }
 }
 
 // ── Database ─────────────────────────────────────────────────────────────────
@@ -56,6 +65,7 @@ builder.Services.AddMassTransit(x =>
 });
 
 // ── Worker dependencies ──────────────────────────────────────────────────────
+builder.Services.AddSingleton<IMessageTypeRegistry, SharedKernelTypeRegistry>();
 builder.Services.AddScoped<ClaimManager>();
 builder.Services.AddScoped<IPublisherFactory, ConfigurationPublisherFactory>();
 builder.Services.AddHostedService<OutboxProcessor>();
