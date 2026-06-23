@@ -92,7 +92,7 @@ internal sealed class OutboxProcessor(
     {
         // Read current RetryCount from DB
         var retryCount = await dbContext.Database
-            .SqlQueryRaw<int>(@"SELECT ""RetryCount""::int FROM ""Events"" WHERE ""Id"" = {0}", evt.Id)
+            .SqlQueryRaw<int>(@"SELECT ""RetryCount""::int AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", evt.Id)
             .FirstOrDefaultAsync(ct);
 
         if (retryCount >= _options.MaxRetries)
@@ -101,7 +101,8 @@ internal sealed class OutboxProcessor(
                 @"UPDATE ""Events"" SET ""Status"" = 'Failed', ""LastError"" = {0},
                   ""ClaimedBy"" = NULL, ""ClaimedAt"" = NULL
                   WHERE ""Id"" = {1}",
-                error, evt.Id, ct);
+                new object[] { error, evt.Id },
+                ct);
         }
         else
         {
@@ -109,7 +110,8 @@ internal sealed class OutboxProcessor(
                 @"UPDATE ""Events"" SET ""RetryCount"" = ""RetryCount"" + 1, ""LastError"" = {0},
                   ""ClaimedBy"" = NULL, ""ClaimedAt"" = NULL
                   WHERE ""Id"" = {1}",
-                error, evt.Id, ct);
+                new object[] { error, evt.Id },
+                ct);
         }
     }
 
@@ -121,14 +123,16 @@ internal sealed class OutboxProcessor(
             await dbContext.Database.ExecuteSqlRawAsync(
                 @"UPDATE ""Events"" SET ""Status"" = {0}, ""PublishedAt"" = {1},
                   ""ClaimedBy"" = NULL, ""ClaimedAt"" = NULL WHERE ""Id"" = {2}",
-                status, publishedAt.Value, eventId, ct);
+                new object[] { status, publishedAt.Value, eventId },
+                ct);
         }
         else
         {
             await dbContext.Database.ExecuteSqlRawAsync(
                 @"UPDATE ""Events"" SET ""Status"" = {0},
                   ""ClaimedBy"" = NULL, ""ClaimedAt"" = NULL WHERE ""Id"" = {1}",
-                status, eventId, ct);
+                new object[] { status, eventId },
+                ct);
         }
     }
 }

@@ -83,7 +83,7 @@ public class OutboxIntegrationTests : IAsyncLifetime
         Assert.Null(ex);
 
         var count = await _dbContext.Database
-            .SqlQueryRaw<int>("""SELECT COUNT(*)::int FROM "Events" WHERE "DeduplicationKey" = {0}""", key)
+            .SqlQueryRaw<int>("""SELECT COUNT(*)::int AS "Value" FROM "Events" WHERE "DeduplicationKey" = {0}""", key)
             .FirstAsync();
 
         Assert.Equal(1, count);
@@ -144,15 +144,24 @@ public class OutboxIntegrationTests : IAsyncLifetime
     {
         var eventId = Guid.NewGuid();
         const string consumer = "ConcurrentConsumer";
+        var connectionString = _postgres.GetConnectionString();
 
-        var tasks = Enumerable.Range(0, 5).Select(_ =>
-            _idempotency.MarkAsProcessedAsync(eventId, consumer));
+        // Each concurrent task uses its own DbContext (DbContext is not thread-safe)
+        var tasks = Enumerable.Range(0, 5).Select(_ => Task.Run(async () =>
+        {
+            var opts = new DbContextOptionsBuilder<OutboxDbContext>()
+                .UseNpgsql(connectionString)
+                .Options;
+            await using var ctx = new OutboxDbContext(opts);
+            var repo = new IdempotencyRepository(ctx);
+            await repo.MarkAsProcessedAsync(eventId, consumer);
+        }));
 
         await Task.WhenAll(tasks);
 
         var count = await _dbContext.Database
             .SqlQueryRaw<int>(
-                """SELECT COUNT(*)::int FROM "ProcessedEvents" WHERE "EventId" = {0} AND "ConsumerName" = {1}""",
+                """SELECT COUNT(*)::int AS "Value" FROM "ProcessedEvents" WHERE "EventId" = {0} AND "ConsumerName" = {1}""",
                 eventId, consumer)
             .FirstAsync();
 

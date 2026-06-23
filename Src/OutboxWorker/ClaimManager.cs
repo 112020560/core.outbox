@@ -34,7 +34,8 @@ internal sealed class ClaimManager
                 FOR UPDATE SKIP LOCKED
             )
             RETURNING ""Id"", ""ServiceName"", ""DeduplicationKey"", ""AggregateId"", ""AggregateType"",
-                      ""EventType"", ""Payload"", ""OccurredAt""";
+                      ""EventType"", ""Payload"", ""OccurredAt"",
+                      ""Status"", ""ClaimedBy"", ""ClaimedAt"", ""PublishedAt"", ""RetryCount"", ""LastError""";
 
         return await _db.Events
             .FromSqlRaw(sql, InstanceId, _options.BatchSize)
@@ -51,6 +52,6 @@ internal sealed class ClaimManager
               AND ""ClaimedAt"" IS NOT NULL
               AND ""ClaimedAt"" < NOW() AT TIME ZONE 'UTC' - INTERVAL '{_options.ClaimTimeoutSeconds} seconds'";
 
-        await _db.Database.ExecuteSqlRawAsync(sql, ct);
+        await _db.Database.ExecuteSqlRawAsync(sql, Array.Empty<object>(), ct);
     }
 }

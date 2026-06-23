@@ -15,7 +15,7 @@ internal sealed class OutboxRepository(OutboxDbContext dbContext) : IOutboxWrite
             ) VALUES (
                 {0}, {1}, {2}, {3}, {4}, {5}, {6}::jsonb, {7}, 'Pending', 0
             )
-            ON CONFLICT ("DeduplicationKey") DO NOTHING
+            ON CONFLICT ("DeduplicationKey") WHERE "DeduplicationKey" IS NOT NULL DO NOTHING
             """;
 
         await dbContext.Database.ExecuteSqlRawAsync(sql,

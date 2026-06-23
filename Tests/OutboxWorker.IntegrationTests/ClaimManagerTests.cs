@@ -68,7 +68,7 @@ public class ClaimManagerTests : IAsyncLifetime
         Assert.All(claimed, e => Assert.Equal("Pending", GetStatus(e.Id)));
 
         var instanceId = await _db.Database
-            .SqlQueryRaw<string>(@"SELECT ""ClaimedBy"" FROM ""Events"" WHERE ""Id"" = {0}", claimed[0].Id)
+            .SqlQueryRaw<string>(@"SELECT ""ClaimedBy"" AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", claimed[0].Id)
             .FirstAsync();
 
         Assert.Equal(_claimManager.InstanceId, instanceId);
@@ -103,11 +103,11 @@ public class ClaimManagerTests : IAsyncLifetime
         await _claimManager.ReleaseStaleClaimsAsync();
 
         var staleClaimedBy = await _db.Database
-            .SqlQueryRaw<string?>(@"SELECT ""ClaimedBy"" FROM ""Events"" WHERE ""Id"" = {0}", staleId)
+            .SqlQueryRaw<string?>(@"SELECT ""ClaimedBy"" AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", staleId)
             .FirstOrDefaultAsync();
 
         var freshClaimedBy = await _db.Database
-            .SqlQueryRaw<string>(@"SELECT ""ClaimedBy"" FROM ""Events"" WHERE ""Id"" = {0}", freshId)
+            .SqlQueryRaw<string>(@"SELECT ""ClaimedBy"" AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", freshId)
             .FirstAsync();
 
         Assert.Null(staleClaimedBy);
@@ -115,6 +115,6 @@ public class ClaimManagerTests : IAsyncLifetime
     }
 
     private string GetStatus(Guid id) =>
-        _db.Database.SqlQueryRaw<string>(@"SELECT ""Status"" FROM ""Events"" WHERE ""Id"" = {0}", id)
+        _db.Database.SqlQueryRaw<string>(@"SELECT ""Status"" AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", id)
             .AsEnumerable().First();
 }

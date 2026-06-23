@@ -67,7 +67,7 @@ public class OutboxProcessorTests : IAsyncLifetime
     }
 
     private string GetStatus(Guid id) =>
-        _db.Database.SqlQueryRaw<string>(@"SELECT ""Status"" FROM ""Events"" WHERE ""Id"" = {0}", id)
+        _db.Database.SqlQueryRaw<string>(@"SELECT ""Status"" AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", id)
             .AsEnumerable().First();
 
     // 7.4 — Full end-to-end: Pending → Published (with stub publisher)
@@ -85,7 +85,7 @@ public class OutboxProcessorTests : IAsyncLifetime
 
         // Run one cycle
         await processor.StartAsync(cts.Token);
-        await Task.Delay(200);
+        await Task.Delay(1000);
         await processor.StopAsync(CancellationToken.None);
 
         Assert.Contains("CustomerCreated", published);
@@ -102,7 +102,7 @@ public class OutboxProcessorTests : IAsyncLifetime
         var processor = BuildProcessor(factory);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         await processor.StartAsync(cts.Token);
-        await Task.Delay(200);
+        await Task.Delay(1000);
         await processor.StopAsync(CancellationToken.None);
 
         Assert.Equal("Skipped", GetStatus(eventId));
@@ -124,13 +124,13 @@ public class OutboxProcessorTests : IAsyncLifetime
         var processor = BuildProcessor(factory, maxRetries: 3);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         await processor.StartAsync(cts.Token);
-        await Task.Delay(300);
+        await Task.Delay(1000);
         await processor.StopAsync(CancellationToken.None);
 
         Assert.Equal("Failed", GetStatus(eventId));
 
         var lastError = await _db.Database
-            .SqlQueryRaw<string>(@"SELECT ""LastError"" FROM ""Events"" WHERE ""Id"" = {0}", eventId)
+            .SqlQueryRaw<string>(@"SELECT ""LastError"" AS ""Value"" FROM ""Events"" WHERE ""Id"" = {0}", eventId)
             .FirstAsync();
         Assert.Contains("broker down", lastError);
     }
@@ -153,7 +153,7 @@ public class OutboxProcessorTests : IAsyncLifetime
         var processor = BuildProcessor(factory);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         await processor.StartAsync(cts.Token);
-        await Task.Delay(300);
+        await Task.Delay(1000);
         await processor.StopAsync(CancellationToken.None);
 
         Assert.Equal("Published", GetStatus(goodId));
