@@ -19,14 +19,17 @@ internal sealed class OutboxRepository(OutboxDbContext dbContext) : IOutboxWrite
             """;
 
         await dbContext.Database.ExecuteSqlRawAsync(sql,
-            outboxEvent.Id,
-            outboxEvent.ServiceName,
-            outboxEvent.DeduplicationKey,
-            outboxEvent.AggregateId,
-            outboxEvent.AggregateType,
-            outboxEvent.EventType,
-            outboxEvent.Payload,
-            outboxEvent.OccurredAt,
+            new object[]
+            {
+                outboxEvent.Id,
+                outboxEvent.ServiceName,
+                outboxEvent.DeduplicationKey,
+                outboxEvent.AggregateId,
+                outboxEvent.AggregateType,
+                outboxEvent.EventType,
+                outboxEvent.Payload,
+                outboxEvent.OccurredAt
+            },
             ct);
     }
 

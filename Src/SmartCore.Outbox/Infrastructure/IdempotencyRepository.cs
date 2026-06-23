@@ -19,6 +19,8 @@ internal sealed class IdempotencyRepository(OutboxDbContext dbContext) : IIdempo
             ON CONFLICT ("EventId", "ConsumerName") DO NOTHING
             """;
 
-        await dbContext.Database.ExecuteSqlRawAsync(sql, eventId, consumerName, DateTimeOffset.UtcNow, ct);
+        await dbContext.Database.ExecuteSqlRawAsync(sql,
+            new object[] { eventId, consumerName, DateTimeOffset.UtcNow },
+            ct);
     }
 }

@@ -44,7 +44,7 @@ public class OutboxProcessorTests : IAsyncLifetime
         await _db.Database.ExecuteSqlRawAsync(
             @"INSERT INTO ""Events"" (""Id"",""ServiceName"",""DeduplicationKey"",""AggregateId"",
               ""AggregateType"",""EventType"",""Payload"",""OccurredAt"",""Status"",""RetryCount"")
-              VALUES ({0},'test',{1},{2},'T',{3},'{}',NOW(),'Pending',0)",
+              VALUES ({0},'test',{1},{2},'T',{3},'{{}}',NOW(),'Pending',0)",
             id, $"key:{id}", Guid.NewGuid(), eventType);
         return id;
     }
