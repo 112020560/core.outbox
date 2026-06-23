@@ -1,0 +1,48 @@
+schema: spec-driven
+
+context: |
+  Tech stack: .NET 9, C#, EF Core 9 + Npgsql, MassTransit, Testcontainers, PostgreSQL
+  Solution: SmartCoreOutbox.sln — single solution containing both the NuGet package and the Worker Service
+  Pattern: Transactional Outbox + Event Store for .NET microservices
+
+  ## Two components in this solution
+  1. SmartCore.Outbox — NuGet Class Library. Installed in every microservice. Only writes events to outbox_db. No processing logic.
+  2. OutboxWorker — Standalone Worker Service (.NET BackgroundService). Reads outbox_db, routes events to RabbitMQ via IPublisherFactory.
+
+  ## Database
+  - PostgreSQL database named outbox_db, dedicated exclusively to this system
+  - Never shares a connection with any service's domain database
+  - Two tables: Events (outbox store) and ProcessedEvents (consumer idempotency)
+  - Worker uses claim-based distributed locking (ClaimedBy/ClaimedAt columns) — no advisory locks
+
+  ## SharedKernel NuGet
+  - Package name: SharedKernel (published to GitHub Packages)
+  - Contains all event contracts used across microservices
+  - Namespace pattern: SharedKernel.Contracts.<Domain>.<Subdomain>
+  - Mixed patterns: some contracts are interfaces, some are records
+  - SmartCore.Outbox (NuGet) does NOT reference SharedKernel — stores raw JSON payload strings
+  - OutboxWorker references SharedKernel to map EventType strings to RabbitMQ exchanges/routing keys
+
+  ## Known event domains and contracts
+  - CRM: CustomerCreated, CustomerUpdated, ProspectConverted, CreditApplicationCreated, CreditApplicationSubmitted, RiskEvaluationCompleted, CreditApplicationApproved, CreditApplicationRejected
+  - Payments: PaymentProcessed, RevolvingPaymentProcessed, PaymentFailed, PaymentRejected
+  - Sales: SaleQuoteCreatedEvent, SaleQuoteCancelledEvent, SaleQuoteExpiredEvent, SaleInvoiceConfirmedEvent
+  - Catalogs: IProductCreated, IProductUpdated, IProductPriceChanged, IProductActivated, IProductDeactivated, ICategoryCreated, IBrandCreated
+  - Inventory: IStockMovementConfirmed, ILowStockDetected, IStockReservationCreated, IStockReservationReleased, IPhysicalInventoryCompleted
+  - ElectronicInvoice: ResultadoFacturaElectronica, ElectronicDocumentProcessedEvent, FacturaElectronicaContract, NotaCreditoElectronicaContract
+
+  ## Conventions
+  - async/await throughout, CancellationToken in every async method
+  - Result pattern for error handling (no exceptions for flow control)
+  - Records with init-only properties for immutable models
+  - Conventional commits
+  - GitHub Actions for CI, NuGet pack, and publish to GitHub Packages
+
+rules:
+  proposal:
+    - Keep proposals focused on one component (NuGet OR Worker, not both)
+    - Always include a Non-goals section
+  tasks:
+    - Break tasks into small, independently testable chunks
+    - Each task must reference the file(s) it creates or modifies
+    - Infrastructure tasks (DbContext, migrations) come before business logic tasks
