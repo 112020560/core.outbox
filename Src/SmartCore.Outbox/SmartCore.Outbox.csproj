@@ -7,7 +7,7 @@
 
     <!-- NuGet metadata -->
     <PackageId>SmartCore.Outbox</PackageId>
-    <Version>0.0.0</Version><!-- overridden by git tag in CI -->
+    <Version>1.1.0</Version>
     <Authors>SmartCore Team</Authors>
     <Description>Transactional Outbox + Event Store for .NET microservices. Durably persists domain events to a dedicated PostgreSQL database before delivery to RabbitMQ.</Description>
     <RepositoryUrl>https://github.com/smartcore/core.outbox</RepositoryUrl>
